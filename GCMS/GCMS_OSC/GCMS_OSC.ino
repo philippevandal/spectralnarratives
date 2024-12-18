@@ -1,25 +1,30 @@
 #include <WiFi.h>
 #include <OSCMessage.h>
+#include <OSCBundle.h>
+#include <WiFiUdp.h>
 
 // Define WiFi credentials
 const char* ssid = "Belleville";
 const char* password = "ETpourquoipas545!";
 
 // Define OSC properties
-const int localPort = 8000;   // Port for OSC communication
+WiFiUDP Udp;  // UDP instance
+const IPAddress remoteIP(192, 168, 1, 100);  // Replace with the IP of your OSC client
+const unsigned int remotePort = 8000;  // OSC send port
+const unsigned int localPort = 9000;   // OSC receive port
 
 // Define PWM properties
-const int pwmFreq = 5000;     // PWM frequency in Hz
-const int pwmResolution = 8;  // PWM resolution in bits (0-255)
+const int pwmFreq = 30000;     // PWM frequency in Hz
+const int pwmResolution = 10;  // PWM resolution in bits (0-255)
 
 // GPIO pin definitions
-const int brightLED = 23;     // GPIO23 for brightLED
+const int brightLED = 32;     // GPIO23 for brightLED
 const int forwardPump = 13;   // GPIO13 for forwardPump
 const int backwardPump = 27;  // GPIO27 for backwardPump
 const int CWstirrer = 26;     // GPIO26 for clockwise stirrer
 const int CCWstirrer = 25;    // GPIO25 for counter-clockwise stirrer
 const int UVLeds = 33;        // GPIO33 for UV LEDs
-const int WhiteLeds = 32;     // GPIO32 for White LEDs
+const int WhiteLeds = 23;     // GPIO32 for White LEDs
 
 // Assign unique PWM channels to each pin
 const int channelBrightLED = 0;
@@ -63,6 +68,7 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+  Udp.begin(localPort);
 
   // Configure PWM channels and attach them to GPIO pins
   ledcSetup(channelBrightLED, pwmFreq, pwmResolution);
@@ -87,65 +93,81 @@ void setup() {
   ledcAttachPin(WhiteLeds, channelWhiteLeds);
 }
 
+void bright_LED (OSCMessage &msg) {
+  float value = msg.getFloat(0); // Get the first argument
+  int pwmValue =value * 1024;
+  ledcWrite(channelBrightLED, pwmValue);
+  Serial.print("OSC brightLED: "); Serial.println(pwmValue);
+}
+
+void pump (OSCMessage &msg) {
+  float value = msg.getFloat(0); // Get the first argument
+  int pwmValue = (value * (1024-(-1024)))-1024;
+  if (pwmValue > 0) {
+    ledcWrite(channelForwardPump, abs(pwmValue));
+    ledcWrite(channelBackwardPump, 0);
+  } else if (pwmValue < 0) {
+    ledcWrite(channelForwardPump, 0);
+    ledcWrite(channelBackwardPump, abs(pwmValue));
+  } else if (pwmValue == 0) {
+     ledcWrite(channelForwardPump, 0);
+    ledcWrite(channelBackwardPump, 0);   
+  }
+  Serial.print("OSC pump PWM: "); Serial.println(value);
+}
+
+void stirrers (OSCMessage &msg) {
+  float value = msg.getFloat(0); // Get the first argument
+  int pwmValue = (value * (650-(-650)))-650;
+  if (pwmValue > 0) {
+    ledcWrite(channelCWStirrer, 0);
+    ledcWrite(channelCCWStirrer, abs(pwmValue));
+  } else if (pwmValue < 0) {
+    ledcWrite(channelCWStirrer, abs(pwmValue));
+    ledcWrite(channelCCWStirrer, 0);
+  } else if (pwmValue == 0) {
+    ledcWrite(channelCWStirrer, 0);
+    ledcWrite(channelCCWStirrer, 0);
+  }
+  Serial.print("OSC stirrers PWM: "); Serial.println(value);
+}
+
+void blackLED (OSCMessage &msg) {
+  float value = msg.getFloat(0);
+  int pwmValue = value * 1024;
+  ledcWrite(channelUVLeds, pwmValue);
+  Serial.print("OSC UVLeds PWM: "); Serial.println(pwmValue);
+}
+void whiteLED (OSCMessage &msg) {
+  float value = msg.getFloat(0);
+  int pwmValue = value * 1024;
+  ledcWrite(channelWhiteLeds, pwmValue);
+  Serial.print("OSC WhiteLeds PWM: "); Serial.println(pwmValue);
+}
+
 void loop() {
   // Check WiFi connection
   WiFiCheck();
 
   // Create an OSCMessage object
-  OSCMessage msg;
+  OSCMessage msgIN;
 
   // Check for incoming OSC messages
   int packetSize = Udp.parsePacket();
-  if (packetSize) {
+  if (packetSize > 0) {
     // Read the incoming packet into the message
-    int n = Udp.read(msg.buffer(), 255);
-    msg.fill(n);
-
+    while (packetSize--) {
+      msgIN.fill(Udp.read());
+    }
     // Process the OSC message
-    if (!msg.empty()) {
+    if (!msgIN.hasError()) {
       // Check the OSC address
-      if (msg.match("/brightLED")) {
-        float value = msg.getFloat(0); // Get the first argument
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelBrightLED, pwmValue);
-        Serial.print("OSC brightLED PWM: "); Serial.println(pwmValue);
-      }
-      else if (msg.match("/forwardPump")) {
-        float value = msg.getFloat(0);
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelForwardPump, pwmValue);
-        Serial.print("OSC forwardPump PWM: "); Serial.println(pwmValue);
-      }
-      else if (msg.match("/backwardPump")) {
-        float value = msg.getFloat(0);
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelBackwardPump, pwmValue);
-        Serial.print("OSC backwardPump PWM: "); Serial.println(pwmValue);
-      }
-      else if (msg.match("/CWstirrer")) {
-        float value = msg.getFloat(0);
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelCWStirrer, pwmValue);
-        Serial.print("OSC CWStirrer PWM: "); Serial.println(pwmValue);
-      }
-      else if (msg.match("/CCWstirrer")) {
-        float value = msg.getFloat(0);
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelCCWStirrer, pwmValue);
-        Serial.print("OSC CCWStirrer PWM: "); Serial.println(pwmValue);
-      }
-      else if (msg.match("/UVLeds")) {
-        float value = msg.getFloat(0);
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelUVLeds, pwmValue);
-        Serial.print("OSC UVLeds PWM: "); Serial.println(pwmValue);
-      }
-      else if (msg.match("/WhiteLeds")) {
-        float value = msg.getFloat(0);
-        int pwmValue = map(value, 0, 1, 0, 255);
-        ledcWrite(channelWhiteLeds, pwmValue);
-        Serial.print("OSC WhiteLeds PWM: "); Serial.println(pwmValue);
-      }
+      msgIN.dispatch("/3/brightLED", bright_LED);
+      msgIN.dispatch("/3/pump", pump);
+      msgIN.dispatch("/3/stirrers", stirrers);
+      msgIN.dispatch("/3/blackLED", blackLED);
+      msgIN.dispatch("/3/whiteLED", whiteLED);
+      msgIN.empty();
     }
   }
 

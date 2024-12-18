@@ -12,36 +12,35 @@ const IPAddress remoteIP(192, 168, 1, 100);  // Replace with the IP of your OSC 
 const unsigned int remotePort = 8000;  // OSC send port
 const unsigned int localPort = 9000;   // OSC receive port
 
-int pumpWhitePin = 32;
-int pumpUVPin = 25;
+int pumpWhitePin = 25;
+int pumpUVPin = 32;
 int whiteLEDPin = 26;
 int UVLEDPin = 27;
 
 int pumpWhite = 0;
 int pumpUV = 1;
-int whiteLED = 2;
-int UVLED = 3;
+int ledW = 2;
+int ledUV = 3;
 
-const int freq = 5000;
+const int freq = 30000;
 const int resolution = 10;
-
 
 void setup() {
 
   ledcSetup(pumpWhite, freq, resolution);
   ledcSetup(pumpUV, freq, resolution);
-  ledcSetup(whiteLED, freq, resolution);
-  ledcSetup(UVLED, freq, resolution);
+  ledcSetup(ledW, freq, resolution);
+  ledcSetup(ledUV, freq, resolution);
 
   ledcAttachPin(pumpWhitePin, pumpWhite);
   ledcAttachPin(pumpUVPin, pumpUV);
-  ledcAttachPin(whiteLEDPin, whiteLED);
-  ledcAttachPin(UVLEDPin, UVLED);
+  ledcAttachPin(whiteLEDPin, ledW);
+  ledcAttachPin(UVLEDPin, ledUV);
 
   ledcWrite(pumpWhite, 0);
   ledcWrite(pumpUV, 0);
-  ledcWrite(whiteLED, 0);
-  ledcWrite(UVLED, 0);
+  ledcWrite(ledW, 0);
+  ledcWrite(ledUV, 0);
 
   Serial.begin(115200);
 
@@ -54,6 +53,7 @@ void setup() {
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
+  Udp.begin(localPort);
 
 }
 
@@ -76,12 +76,49 @@ void WiFiCheck(){
   }  
 }
 
+void pump_White (OSCMessage &msg) {
+  int value = msg.getFloat(0) * 1024.0;
+  ledcWrite(pumpWhite, value);
+  Serial.print("pump W: ");
+  Serial.println(value);
+}
+
+void pump_UV (OSCMessage &msg) {
+  int value = msg.getFloat(0) * 1024.0;
+  ledcWrite(pumpUV, value);
+  Serial.print("pump UV: ");
+  Serial.println(value);
+}
+
+void led_UV (OSCMessage &msg) {
+  int value = msg.getFloat(0) * 1024.0;
+  ledcWrite(ledUV, value);
+  Serial.print("UV: ");
+  Serial.println(value);
+}
+
+void led_W (OSCMessage &msg) {
+  int value = msg.getFloat(0) * 1024.0;
+  ledcWrite(ledW, value);
+  Serial.print("W: ");
+  Serial.println(value);
+}
+
 void loop() {
   WiFiCheck();
 
-  ledcWrite(pumpWhite, 255);
-  ledcWrite(pumpUV, 50);
-  ledcWrite(whiteLED, 100);
-  ledcWrite(UVLED, 255);
-
+  OSCMessage msgIN;
+  int packetSize = Udp.parsePacket();
+  if (packetSize > 0) {
+    while (packetSize--) {
+      msgIN.fill(Udp.read());
+    }
+    if (!msgIN.hasError()) {
+      msgIN.dispatch("/2/pumpUV", pump_UV);
+      msgIN.dispatch("/2/pumpWhite", pump_White);
+      msgIN.dispatch("/2/ledUV", led_UV);
+      msgIN.dispatch("/2/ledWhite", led_W);
+      msgIN.empty();
+    }
+  }
 }
