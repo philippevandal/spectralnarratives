@@ -4,8 +4,8 @@
 #include <WiFiUdp.h>
 
 // Define WiFi credentials
-const char* ssid = "Belleville";
-const char* password = "ETpourquoipas545!";
+const char* ssid = "spectral";
+const char* password = "narratives";
 
 // Define OSC properties
 WiFiUDP Udp;  // UDP instance
@@ -150,7 +150,7 @@ void loop() {
   WiFiCheck();
 
   // Create an OSCMessage object
-  OSCMessage msgIN;
+  OSCBundle msgIN;
 
   // Check for incoming OSC messages
   int packetSize = Udp.parsePacket();

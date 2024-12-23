@@ -5,8 +5,8 @@
 #include <WiFiUdp.h>
 
 // WiFi credentials
-const char* ssid = "Belleville"; //ACAB
-const char* password = "ETpourquoipas545!"; //vivavivaPal3stinA!
+const char* ssid = "spectral"; //ACAB
+const char* password = "narratives"; //vivavivaPal3stinA!
 
 // OSC settings
 WiFiUDP Udp;  // UDP instance
@@ -23,7 +23,9 @@ const int resolution = 10;
 int dutyCycle = 500;
 int step = 10;
 const int ledPin = 13;
+const int ledSOILPin = 10; //TBD
 const int channelLed = 10;
+const int channelLedSOIL = 1; 
 
 #define motorInterfaceType 1
 AccelStepper stepper1(motorInterfaceType, stepPin0, dirPin0);
@@ -46,6 +48,16 @@ void led(OSCMessage &msg) {
   if (msg.isFloat(0)) {
     int brightness = msg.getFloat(0) * 1024.0;
     ledcWrite(channelLed, brightness);
+    // Serial.print("led:");
+    // Serial.print(brightness);
+    // Serial.println();
+  }
+}
+
+void ledSOIL(OSCMessage &msg) {
+  if (msg.isFloat(0)) {
+    int brightness = msg.getFloat(0) * 1024.0;
+    ledcWrite(channelLedSOIL, brightness);
     // Serial.print("led:");
     // Serial.print(brightness);
     // Serial.println();
@@ -80,6 +92,8 @@ void setup() {
 
   ledcSetup(channelLed, freq, resolution);
   ledcAttachPin(ledPin, channelLed);
+  ledcSetup(channelLedSOIL, freq, resolution);
+  ledcAttachPin(ledSOILPin, channelLedSOIL);
   // ledcWrite(channelLed, 0);
   delay(500);
 
@@ -116,7 +130,7 @@ void WiFiCheck(){
 void loop() {
   WiFiCheck();
   
-  OSCMessage msgIN;
+  OSCBundle msgIN;
   int packetSize = Udp.parsePacket();
   if (packetSize > 0) {
     while (packetSize--) {
@@ -126,6 +140,7 @@ void loop() {
       msgIN.dispatch("/0/stirrer", stirrer);
       msgIN.dispatch("/0/led", led);
       msgIN.dispatch("/0/stepper", stepper);
+      msgIN.dispatch("/0/ledSOIL", ledSOIL);
       // msgIN.empty();
     }
   }

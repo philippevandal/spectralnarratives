@@ -3,8 +3,8 @@
 #include <OSCBundle.h>
 #include <WiFiUdp.h>
 
-const char* ssid = "Belleville";
-const char* password = "ETpourquoipas545!";
+const char* ssid = "spectral";
+const char* password = "narratives";
 
 // OSC settings
 WiFiUDP Udp;  // UDP instance
@@ -107,7 +107,7 @@ void led_W (OSCMessage &msg) {
 void loop() {
   WiFiCheck();
 
-  OSCMessage msgIN;
+  OSCBundle msgIN;
   int packetSize = Udp.parsePacket();
   if (packetSize > 0) {
     while (packetSize--) {

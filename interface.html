@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Button Control</title>
+    <script src="/socket.io/socket.io.js"></script> //node_modules/socket.io-client/dist/socket.io.js
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Socket.IO Button Control</h1>
+    <div class="button-container">
+        <button data-value="0">Stop</button>
+        <button data-value="1">Module 1</button>
+        <button data-value="2">Module 2</button>
+        <button data-value="3">Module 3</button>
+        <button data-value="4">Module 4</button>
+        <button data-value="5">Play</button>
+    </div>
+
+    <script>
+        // Initialize Socket.IO client
+        const socket = io();
+
+        // Add click event listener to all buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => {
+                const value = button.getAttribute('data-value');
+                console.log(`Button clicked: ${value}`);
+                // Emit the value to the server
+                socket.emit('buttonClicked', value);
+            });
+        });
+    </script>
+</body>
+</html>
