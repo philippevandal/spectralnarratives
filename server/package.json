@@ -1,0 +1,14 @@
+{
+  "name": "spectralnarrativescontrol",
+  "version": "1.0.0",
+  "description": "Control Interface for the spectral narratives installation",
+  "main": "interface.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "philippe vandal",
+  "license": "ISC",
+  "dependencies": {
+    "socketio": "^1.0.0"
+  }
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/socket.io/socket.io.js"></script>
+    <title>Button Controller</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #111; /* Subtle dark background */
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            max-width: 500px; /* Limit width for larger screens */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: linear-gradient(45deg, #8e9eab, #eef2f3); /* Default soft gradient */
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Subtle gradient colors for each button */
+        .btn-0 {
+            background: linear-gradient(45deg, #a8c0ff, #ddeeff);
+        }
+
+        .btn-1 {
+            background: linear-gradient(45deg, #fbc2eb, #a6c1ee);
+        }
+
+        .btn-2 {
+            background: linear-gradient(45deg, #ffecd2, #fcb69f);
+        }
+
+        .btn-3 {
+            background: linear-gradient(45deg, #d4fc79, #96e6a1);
+        }
+
+        .btn-4 {
+            background: linear-gradient(45deg, #84fab0, #8fd3f4);
+        }
+
+        .btn-5 {
+            background: linear-gradient(45deg, #cfd9df, #e2ebf0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="btn-0" onclick="sendValue(0)">Stop</button>
+        <button class="btn-1" onclick="sendValue(1)">Module 1</button>
+        <button class="btn-2" onclick="sendValue(2)">Module 2</button>
+        <button class="btn-3" onclick="sendValue(3)">Module 3</button>
+        <button class="btn-4" onclick="sendValue(4)">Module 4</button>
+        <button class="btn-5" onclick="sendValue(5)">Play</button>
+    </div>
+
+    <script src="/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function sendValue(value) {
+            socket.emit('buttonClicked', value);
+        }
+    </script>
+</body>
+</html>
