@@ -1,16 +1,18 @@
-var http = require('http');
-var fs = require('fs');
-var socketio = require('socket.io');
-var dgram = require('dgram');
+const http = require('http');
+const fs = require('fs');
+const socketio = require('socket.io');
+const OSC = require('osc-js');
 
-const UDP_RECEIVE_PORT = 9998;
-const UDP_SEND_PORT = 9997;
-const OSC_ADDRESS = "mode"; //OSCdevice:
+// Configuration for OSC
+const UDP_SEND_PORT = 9997; // Default port for /mode
+const SPECIAL_PORT = 6666;  // Port for /stop and /play
+const OSC_ADDRESS = "/mode"; // Default OSC address
+const STOP_ADDRESS = "/stop";
+const PLAY_ADDRESS = "/play";
 
 // Create HTTP server
-var http_server = http.createServer((req, res) => {
-    // Serve the HTML interface
-    fs.readFile(__dirname + '/interface.html', (err, data) => {
+const httpServer = http.createServer((req, res) => {
+    fs.readFile('./interface.html', (err, data) => {
         if (err) {
             res.writeHead(500);
             return res.end('Error loading interface.html');
@@ -22,7 +24,29 @@ var http_server = http.createServer((req, res) => {
 });
 
 // Attach Socket.IO to the HTTP server
-var io = socketio(http_server);
+const io = socketio(httpServer);
+
+// Configure OSC
+const osc = new OSC({
+    plugin: new OSC.DatagramPlugin({
+        open: {
+            host: '0.0.0.0', // Local IP to listen for incoming messages
+            port: 9998,      // UDP receive port
+        },
+        send: {
+            host: '127.0.0.1', // Target IP for outgoing messages
+        },
+    }),
+});
+
+osc.open(); // Start OSC server and client
+
+// Function to send /play OSC message
+const triggerPlay = () => {
+    const playMessage = new OSC.Message(PLAY_ADDRESS, true); // Boolean true
+    osc.send(playMessage, { port: SPECIAL_PORT });
+    console.log(`OSC message triggered: ${PLAY_ADDRESS} true`);
+};
 
 // Handle WebSocket connections
 io.on('connection', (socket) => {
@@ -31,17 +55,20 @@ io.on('connection', (socket) => {
     socket.on('buttonClicked', (value) => {
         console.log(`Button clicked with value: ${value}`);
 
-        // Send OSC message
-        var udpServer = dgram.createSocket('udp4');
-        var messageBuffer = Buffer.from(`${OSC_ADDRESS} ${value}`);
-        udpServer.send(messageBuffer, 0, messageBuffer.length, UDP_SEND_PORT, '127.0.0.1', (err) => {
-            if (err) {
-                console.error(`Error sending OSC message: ${err.message}`);
-            } else {
-                console.log(`OSC message sent: ${OSC_ADDRESS} ${value}`);
-            }
-            udpServer.close();
-        });
+        if (value === 0) {
+            // Stop button
+            const stopMessage = new OSC.Message(STOP_ADDRESS, true); // Boolean true
+            osc.send(stopMessage, { port: SPECIAL_PORT });
+            console.log(`OSC message sent: ${STOP_ADDRESS} true`);
+        } else if (value === 5) {
+            // Play button
+            triggerPlay(); // Use the shared function to send /play
+        } else {
+            // Other buttons
+            const message = new OSC.Message(OSC_ADDRESS, value); // Integer value
+            osc.send(message, { port: UDP_SEND_PORT });
+            console.log(`OSC message sent: ${OSC_ADDRESS} ${value}`);
+        }
     });
 
     socket.on('disconnect', () => {
@@ -49,15 +76,14 @@ io.on('connection', (socket) => {
     });
 });
 
+// Simulate an external trigger for /play
+setTimeout(() => {
+    console.log("Simulating external /play trigger...");
+    triggerPlay();
+}, 10000); // Example: Trigger after 10 seconds
+
 // Start the HTTP server
 const HTTP_PORT = 8080;
-http_server.listen(HTTP_PORT, () => {
+httpServer.listen(HTTP_PORT, () => {
     console.log(`HTTP server is running on http://localhost:${HTTP_PORT}`);
 });
-
-// UDP server setup (if needed)
-const udpReceiver = dgram.createSocket('udp4');
-udpReceiver.on('message', (msg, rinfo) => {
-    console.log(`UDP server received: ${msg} from ${rinfo.address}:${rinfo.port}`);
-});
-udpReceiver.bind(UDP_RECEIVE_PORT, '127.0.0.1');    //0.0.0.0

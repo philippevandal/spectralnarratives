@@ -9,6 +9,7 @@
   "author": "philippe vandal",
   "license": "ISC",
   "dependencies": {
+    "osc-js": "^2.4.1",
     "socketio": "^1.0.0"
   }
 }
