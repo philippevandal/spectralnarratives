@@ -60,7 +60,7 @@ io.on('connection', (socket) => {
             const stopMessage = new OSC.Message(STOP_ADDRESS, true); // Boolean true
             osc.send(stopMessage, { port: SPECIAL_PORT });
             console.log(`OSC message sent: ${STOP_ADDRESS} true`);
-        } else if (value === 5) {
+        } else if (value === 6) {
             // Play button
             triggerPlay(); // Use the shared function to send /play
         } else {

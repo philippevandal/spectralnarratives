@@ -15,7 +15,7 @@ const unsigned int localPort = 9000;   // OSC receive port
 
 // Define PWM properties
 const int pwmFreq = 30000;     // PWM frequency in Hz
-const int pwmResolution = 10;  // PWM resolution in bits (0-255)
+const int pwmResolution = 10;  // PWM resolution in bits (0-1024)
 
 // GPIO pin definitions
 const int brightLED = 32;     // GPIO23 for brightLED

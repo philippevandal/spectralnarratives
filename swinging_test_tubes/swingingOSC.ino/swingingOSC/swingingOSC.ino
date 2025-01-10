@@ -29,7 +29,7 @@ const unsigned int localPort = 9000;   // OSC receive port
 #define STEPS_PER_REV 4096
 #define LEDC_CHANNEL_UV 0
 #define LEDC_CHANNEL_W 1
-#define LEDC_TIMER_13_BIT 13
+#define LEDC_TIMER_13_BIT 10
 #define LEDC_BASE_FREQ 30000
 
 const int MAX_ANGLE = 45;
@@ -53,21 +53,26 @@ void ledW (OSCMessage &msg) {
 }
 
 void stepper_UV (OSCMessage &msg) {
-  int angle = (msg.getFloat(0) * 2 * STEPS_PER_REV / 6) - STEPS_PER_REV / 6;
-  // int stepsUV = map(angle, -MAX_ANGLE, MAX_ANGLE, -STEPS_PER_REV / 6, STEPS_PER_REV / 6);
+  int angle = (msg.getFloat(0) * 2 * MAX_ANGLE) - MAX_ANGLE;
+  int steps = map(angle, -MAX_ANGLE, MAX_ANGLE, -STEPS_PER_REV / 12, STEPS_PER_REV / 12);
   Serial.print("stepperUV: ");
-  Serial.println(stepsUV);
-  stepperUV.moveTo(angle);
-  stepperUV.run();
+  Serial.println(angle);
+  stepperUV.moveTo(steps);
+  while (stepperUV.distanceToGo() != 0) {
+    stepperUV.run();
+  }
+  // stepperUV.run();
 }
 
 void stepper_W (OSCMessage &msg) {
-  int angle = (msg.getFloat(0) * 2 * STEPS_PER_REV / 6) - STEPS_PER_REV / 6;
-  // int stepsW = map(angle, -MAX_ANGLE, MAX_ANGLE, -STEPS_PER_REV / 6, STEPS_PER_REV / 6);
+  int angle = (msg.getFloat(0) * 2 * MAX_ANGLE) - MAX_ANGLE;
+  int steps = map(angle, -MAX_ANGLE, MAX_ANGLE, -STEPS_PER_REV / 12, STEPS_PER_REV / 12);
   Serial.print("stepperW: ");
-  Serial.println(stepsW);
-  stepperW.moveTo(stepsW);
+  Serial.println(angle);
+  stepperW.moveTo(steps);
+  while (stepperW.distanceToGo() != 0) {
   stepperW.run();
+  }
 }
 
   // stepperUV.moveTo(stepsUV);
@@ -110,6 +115,25 @@ void setup() {
   ledcSetup(LEDC_CHANNEL_W, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
   ledcAttachPin(LED_PIN1, LEDC_CHANNEL_UV);
   ledcAttachPin(LED_PIN2, LEDC_CHANNEL_W);
+}
+
+void WiFiCheck(){
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    delay(1000);
+    WiFi.begin(ssid, password);
+    Serial.print("\nConnecting to ");
+    Serial.print(ssid);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("Connected!");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    delay(100);
+  }  
 }
 
 void loop() {

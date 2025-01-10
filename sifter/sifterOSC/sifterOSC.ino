@@ -23,9 +23,9 @@ const int resolution = 10;
 int dutyCycle = 500;
 int step = 10;
 const int ledPin = 13;
-const int ledSOILPin = 10; //TBD
+const int ledSOILPin = 27; //TBD
 const int channelLed = 10;
-const int channelLedSOIL = 1; 
+const int channelLedSOIL = 3; 
 
 #define motorInterfaceType 1
 AccelStepper stepper1(motorInterfaceType, stepPin0, dirPin0);
@@ -67,7 +67,7 @@ void ledSOIL(OSCMessage &msg) {
 void stepper(OSCMessage &msg) {
   int steps;
   if (msg.isFloat(0)) {
-    steps = msg.getFloat(0) * (10.0) - 5.0;
+    steps = (msg.getFloat(0) * 10.0) - 5.0;
     // Serial.print("steps:");
     // Serial.print(steps);
     // Serial.println();
@@ -141,7 +141,7 @@ void loop() {
       msgIN.dispatch("/0/led", led);
       msgIN.dispatch("/0/stepper", stepper);
       msgIN.dispatch("/0/ledSOIL", ledSOIL);
-      // msgIN.empty();
+      msgIN.empty();
     }
   }
 }
