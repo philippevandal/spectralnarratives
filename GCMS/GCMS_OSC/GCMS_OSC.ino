@@ -7,6 +7,10 @@
 const char* ssid = "spectral";
 const char* password = "narratives";
 
+IPAddress staticIP(10, 0, 1, 14); // ESP32 static IP
+IPAddress gateway(10, 0, 1, 1);    // IP Address of your network gateway (router)
+IPAddress subnet(255, 255, 255, 0);   // Subnet mask
+
 // Define OSC properties
 WiFiUDP Udp;  // UDP instance
 const IPAddress remoteIP(192, 168, 1, 100);  // Replace with the IP of your OSC client
@@ -64,6 +68,13 @@ void setup() {
     delay(1000);
     Serial.print(".");
   }
+
+  if(!WiFi.config(staticIP, gateway, subnet)) {
+    Serial.println("Failed to configure Static IP");
+  } else {
+    Serial.println("Static IP configured!");
+  }
+
   Serial.println();
   Serial.println("WiFi connected");
   Serial.print("IP Address: ");
@@ -162,11 +173,11 @@ void loop() {
     // Process the OSC message
     if (!msgIN.hasError()) {
       // Check the OSC address
-      msgIN.dispatch("/3/brightLED", bright_LED);
-      msgIN.dispatch("/3/pump", pump);
-      msgIN.dispatch("/3/stirrers", stirrers);
-      msgIN.dispatch("/3/blackLED", blackLED);
-      msgIN.dispatch("/3/whiteLED", whiteLED);
+      msgIN.dispatch("/brightLED", bright_LED);
+      msgIN.dispatch("/pump", pump);
+      msgIN.dispatch("/stirrers", stirrers);
+      msgIN.dispatch("/blackLED", blackLED);
+      msgIN.dispatch("/whiteLED", whiteLED);
       msgIN.empty();
     }
   }
