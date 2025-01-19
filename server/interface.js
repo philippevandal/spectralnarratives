@@ -1,3 +1,5 @@
+#!/bin/env/ node
+
 const http = require('http');
 const fs = require('fs');
 const socketio = require('socket.io');
@@ -75,12 +77,6 @@ io.on('connection', (socket) => {
         console.log('A client disconnected');
     });
 });
-
-// Simulate an external trigger for /play
-setTimeout(() => {
-    console.log("Simulating external /play trigger...");
-    triggerPlay();
-}, 10000); // Example: Trigger after 10 seconds
 
 // Start the HTTP server
 const HTTP_PORT = 8080;
