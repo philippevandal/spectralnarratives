@@ -3,6 +3,8 @@
 #include <OSCMessage.h>
 #include <OSCBundle.h>
 #include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include "esp_task_wdt.h"
 
 // WiFi credentials
 const char* ssid = "spectral"; //ACAB
@@ -34,8 +36,7 @@ const int channelLedSOIL = 3;
 #define motorInterfaceType 1
 AccelStepper stepper1(motorInterfaceType, stepPin0, dirPin0);
 
-unsigned long previousMillis = 0;
-const long interval = 5000;
+#define WDT_TIMEOUT 20
 
 void stirrer(OSCMessage &msg) {
   if (msg.isFloat(0)) {
@@ -99,6 +100,10 @@ void setup() {
   Serial.println(WiFi.localIP());
   Udp.begin(localPort);
 
+  ArduinoOTA.setHostname("module_0");
+  ArduinoOTA.begin();
+  Serial.println("OTA ready");
+
   ledcSetup(channelLed, freq, resolution);
   ledcAttachPin(ledPin, channelLed);
   ledcSetup(channelLedSOIL, freq, resolution);
@@ -115,6 +120,9 @@ void setup() {
 
   stepper1.setMaxSpeed(200.0);
   stepper1.setAcceleration(100.0);
+
+  esp_task_wdt_init(WDT_TIMEOUT, true);
+  esp_task_wdt_add(NULL);
 }
 
 void WiFiCheck(){
@@ -138,7 +146,9 @@ void WiFiCheck(){
 
 void loop() {
   WiFiCheck();
-  
+  esp_task_wdt_reset();
+  ArduinoOTA.handle();
+
   OSCBundle msgIN;
   int packetSize = Udp.parsePacket();
   if (packetSize > 0) {

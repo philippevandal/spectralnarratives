@@ -2,6 +2,8 @@
 #include <OSCMessage.h>
 #include <OSCBundle.h>
 #include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include "esp_task_wdt.h"
 
 const char* ssid = "spectral";
 const char* password = "narratives";
@@ -28,6 +30,8 @@ int ledUV = 3;
 
 const int freq = 30000;
 const int resolution = 10;
+
+#define WDT_TIMEOUT 20
 
 void setup() {
 
@@ -65,6 +69,12 @@ void setup() {
   Serial.println(WiFi.localIP());
   Udp.begin(localPort);
 
+  ArduinoOTA.setHostname("module_2");
+  ArduinoOTA.begin();
+  Serial.println("OTA ready");
+
+  esp_task_wdt_init(WDT_TIMEOUT, true);
+  esp_task_wdt_add(NULL);
 }
 
 void WiFiCheck(){
@@ -116,6 +126,8 @@ void led_W (OSCMessage &msg) {
 
 void loop() {
   WiFiCheck();
+  esp_task_wdt_reset();
+  ArduinoOTA.handle();
 
   OSCBundle msgIN;
   int packetSize = Udp.parsePacket();

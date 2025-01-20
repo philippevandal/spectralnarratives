@@ -2,6 +2,8 @@
 #include <OSCMessage.h>
 #include <OSCBundle.h>
 #include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include "esp_task_wdt.h"
 
 // Define WiFi credentials
 const char* ssid = "spectral";
@@ -38,6 +40,8 @@ const int channelCWStirrer = 3;
 const int channelCCWStirrer = 4;
 const int channelUVLeds = 5;
 const int channelWhiteLeds = 6;
+
+#define WDT_TIMEOUT 20
 
 // Function to check and maintain WiFi connection
 void WiFiCheck() {
@@ -81,6 +85,10 @@ void setup() {
   Serial.println(WiFi.localIP());
   Udp.begin(localPort);
 
+  ArduinoOTA.setHostname("module_3");
+  ArduinoOTA.begin();
+  Serial.println("OTA ready");
+
   // Configure PWM channels and attach them to GPIO pins
   ledcSetup(channelBrightLED, pwmFreq, pwmResolution);
   ledcAttachPin(brightLED, channelBrightLED);
@@ -102,6 +110,9 @@ void setup() {
 
   ledcSetup(channelWhiteLeds, pwmFreq, pwmResolution);
   ledcAttachPin(WhiteLeds, channelWhiteLeds);
+
+  esp_task_wdt_init(WDT_TIMEOUT, true);
+  esp_task_wdt_add(NULL);
 }
 
 void bright_LED (OSCMessage &msg) {
@@ -159,6 +170,8 @@ void whiteLED (OSCMessage &msg) {
 void loop() {
   // Check WiFi connection
   WiFiCheck();
+  esp_task_wdt_reset();
+  ArduinoOTA.handle();
 
   // Create an OSCMessage object
   OSCBundle msgIN;

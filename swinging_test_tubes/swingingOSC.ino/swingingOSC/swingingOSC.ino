@@ -3,6 +3,8 @@
 #include <OSCMessage.h>
 #include <OSCBundle.h>
 #include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include "esp_task_wdt.h"
 
 // WiFi credentials
 const char* ssid = "spectral";
@@ -40,6 +42,8 @@ const int MAX_ANGLE = 45;
 
 AccelStepper stepperUV(AccelStepper::FULL4WIRE, IN1_PIN1, IN3_PIN1, IN2_PIN1, IN4_PIN1);
 AccelStepper stepperW(AccelStepper::FULL4WIRE, IN1_PIN2, IN3_PIN2, IN2_PIN2, IN4_PIN2);
+
+#define WDT_TIMEOUT 20
 
 // Function to handle incoming OSC messages for stepper motors and LEDs
 void ledUV (OSCMessage &msg) {
@@ -79,23 +83,6 @@ void stepper_W (OSCMessage &msg) {
   }
 }
 
-  // stepperUV.moveTo(stepsUV);
-  // stepperW.moveTo(stepsW);
-  // while (stepperUV.distanceToGo() != 0 || stepperW.distanceToGo() != 0) {
-  //   stepperUV.run();
-  //   stepperW.run();
-  // }
-
-  // stepperUV.moveTo(0);
-  // stepperW.moveTo(0);
-  // while (stepperUV.distanceToGo() != 0 || stepperW.distanceToGo() != 0) {
-  //   stepperUV.run();
-  //   stepperW.run();
-  // }
-  // stepperUV.run();
-  // stepperW.run();
-// }
-
 void setup() {
   // WiFi Setup
   Serial.begin(115200);
@@ -115,6 +102,10 @@ void setup() {
   Serial.println(WiFi.localIP());
   Udp.begin(localPort);
 
+  ArduinoOTA.setHostname("module_1");
+  ArduinoOTA.begin();
+  Serial.println("OTA ready");
+
   // Motor setup
   stepperUV.setMaxSpeed(1000.0);
   stepperUV.setAcceleration(500.0);
@@ -126,6 +117,9 @@ void setup() {
   ledcSetup(LEDC_CHANNEL_W, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
   ledcAttachPin(LED_PIN1, LEDC_CHANNEL_UV);
   ledcAttachPin(LED_PIN2, LEDC_CHANNEL_W);
+
+  esp_task_wdt_init(WDT_TIMEOUT, true);
+  esp_task_wdt_add(NULL);
 }
 
 void WiFiCheck(){
@@ -150,6 +144,9 @@ void WiFiCheck(){
 void loop() {
   // OSC receive
   WiFiCheck();
+  esp_task_wdt_reset();
+  ArduinoOTA.handle();
+
   OSCBundle msgIN;
   int packetSize = Udp.parsePacket();
   if (packetSize > 0) {
